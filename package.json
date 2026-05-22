@@ -9,6 +9,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "tsx": "^4.19.2",
     "@prisma/client": "^5.20.0",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
