@@ -44,7 +44,8 @@ app.use("/sync", requireAuth, syncRouter);
 app.use("/tax-reports", requireAuth, taxReportsRouter);
 
 app.use(errorHandler);
+const PORT = process.env.PORT || 3001;
 
-app.listen(env.PORT, "0.0.0.0", () => {
-  console.log(`Backend ouvindo na porta ${env.PORT}`);
+app.listen(PORT, () => {
+  console.log(`Backend ouvindo na porta ${PORT}`);
 });
