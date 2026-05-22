@@ -1,0 +1,59 @@
+/*
+Adicionar ao schema.prisma principal e rodar:
+npx prisma migrate dev --name closing_plan_sync_reports
+npx prisma generate
+*/
+
+model SyncMap {
+  id        String   @id @default(cuid())
+  userId    String
+  entity    String
+  localId   String
+  serverId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entity, localId])
+}
+
+model SyncEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  entity    String
+  action    String
+  status    String
+  payload   Json?
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PaymentAlert {
+  id          String   @id @default(cuid())
+  userId      String
+  debtId      String?
+  competencia String
+  status      String
+  message     String
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RefreshSession {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  userAgent  String?
+  revokedAt  DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

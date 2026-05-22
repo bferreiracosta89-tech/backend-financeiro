@@ -1,0 +1,400 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String          @id @default(cuid())
+  googleId        String?         @unique
+  email           String          @unique
+  name            String?
+  picture         String?
+  passwordHash    String          @default("")
+  role            String          @default("ADMIN")
+  profile         String          @default("GESTOR")
+  active          Boolean         @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  income          Income?
+  minExist        MinExistencial?
+  legalPlan       LegalPlan?
+  debts           Debt[]
+  cardPurchases   CardPurchase[]
+  expenses        Expense[]
+  accounts        Account[]
+  negotiations    Negotiation[]
+  reminders       Reminder[]
+  payments        Payment[]
+  syncMaps        SyncMap[]
+  agreements      Agreement[]
+  legalAgreements LegalAgreement[]
+  paymentAlerts   PaymentAlert[]
+  sessions        UserSession[]
+  taxReports      TaxReport[]
+}
+
+model Income {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bruto           Float    @default(0)
+  liquido         Float    @default(0)
+  fontePagadora   String   @default("")
+  banco           String   @default("")
+  dataRecebimento String   @default("")
+  observacao      String   @default("")
+  updatedAt       DateTime @updatedAt
+}
+
+model MinExistencial {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alimentacao Float    @default(0)
+  transporte  Float    @default(0)
+  agua        Float    @default(0)
+  energia     Float    @default(0)
+  internet    Float    @default(0)
+  saude       Float    @default(0)
+  outros      Float    @default(0)
+  reserva     Float    @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+model LegalPlan {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  protocolado   Boolean  @default(false)
+  local         String   @default("Defensoria Pública")
+  dataProtocolo String   @default("")
+  numero        String   @default("")
+  dataAudiencia String   @default("")
+  status        String   @default("")
+  observacao    String   @default("")
+  updatedAt     DateTime @updatedAt
+}
+
+model Debt {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credor         String
+  tipo           String         @default("")
+  total          Float          @default(0)
+  parcela        Float          @default(0)
+  vencimento     String         @default("")
+  status         String         @default("PAGAR")
+  prioridade     String         @default("MEDIA")
+  garantia       Boolean        @default(false)
+  observacao     String         @default("")
+  numeroContrato String         @default("")
+  valorTotal     Float          @default(0)
+  taxaJuros      Float          @default(0)
+  qtdParcelas    Int            @default(0)
+  parcelasPagas  Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+  cardPurchases  CardPurchase[]
+  reminders      Reminder[]
+  payments       Payment[]
+  agreements Agreement[]
+  negotiations Negotiation[]
+  statusAnterior String?
+  totalAnterior Float?
+  valorTotalAnterior Float?
+  parcelaAnterior Float?
+  qtdParcelasAnterior Int?
+  parcelasPagasAnterior Int?
+  @@index([userId, updatedAt])
+}
+
+model CardPurchase {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  debtId          String
+  debt            Debt      @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  descricao       String    @default("")
+  estabelecimento String    @default("")
+  dataCompra      String    @default("")
+  valorTotal      Float     @default(0)
+  qtdParcelas     Int       @default(1)
+  parcelasPagas   Int       @default(0)
+  valorParcela    Float     @default(0)
+  primeiraParcela String    @default("")
+  observacao      String    @default("")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  expenses        Expense[]
+
+  @@index([userId, updatedAt])
+  @@index([debtId])
+}
+
+model Expense {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data           String        @default("")
+  descricao      String        @default("")
+  categoria      String        @default("Outros")
+  valor          Float         @default(0)
+  formaPagamento String        @default("Dinheiro")
+  accountId      String?
+  account        Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  parcelado      Boolean       @default(false)
+  qtdParcelas    Int           @default(1)
+  cardPurchaseId String?
+  cardPurchase   CardPurchase? @relation(fields: [cardPurchaseId], references: [id], onDelete: SetNull)
+  observacao     String        @default("")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  @@index([userId, updatedAt])
+  @@index([userId, data])
+}
+
+model Account {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nome          String
+  tipo          String    @default("CONTA_CORRENTE")
+  limiteTotal   Float     @default(0)
+  diaFechamento Int       @default(0)
+  diaVencimento Int       @default(0)
+  observacao    String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  expenses      Expense[]
+
+  @@index([userId, updatedAt])
+}
+
+model Negotiation {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  debtId      String?
+  debt        Debt?     @relation(fields: [debtId], references: [id], onDelete: SetNull)
+  credor      String
+  valorOriginal Float   @default(0)
+  valorAcordado Float   @default(0)
+  qtdParcelas Int       @default(0)
+  parcelasPagas Int     @default(0)
+  data        String    @default("")
+  canal       String    @default("Telefone")
+  resposta    String    @default("")
+  proposta    String    @default("")
+  novaParcela Float     @default(0)
+  prazo       String    @default("")
+  aceito      Boolean   @default(false)
+  proximaAcao String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([userId, updatedAt])
+  @@index([debtId])
+}
+
+model Reminder {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  debtId         String?
+  debt           Debt?     @relation(fields: [debtId], references: [id], onDelete: SetNull)
+  titulo         String    @default("")
+  diaDoMes       Int       @default(1)
+  ativo          Boolean   @default(true)
+  notificationId String    @default("")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  @@index([userId, updatedAt])
+}
+
+// ============================================================
+// Payment: histórico mês a mês de cada dívida.
+// Tipos:
+//   PARCELA       — pagamento da parcela mensal (incrementa parcelasPagas)
+//   AMORTIZACAO   — pagamento extra que abate do saldo (não conta como parcela)
+//   LIQUIDACAO    — quitação total com possível desconto (zera saldo, status=QUITADO)
+//   PARCIAL       — paguei menos do que a parcela cheia (abate só o que pagou)
+//   NAO_PAGO     — registro de mês NÃO pago (não altera saldo, só histórico)
+// ============================================================
+model Payment {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  debtId        String
+  debt          Debt      @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  competencia   String // "YYYY-MM" mês de referência da parcela
+  dataPagamento String // "YYYY-MM-DD" quando foi pago (vazio se NAO_PAGO)
+  valorPago     Float // valor efetivamente desembolsado
+  tipo          String // PARCELA | AMORTIZACAO | LIQUIDACAO | PARCIAL | NAO_PAGO
+  juros         Float     @default(0) // juros/multa pagos junto (informativo)
+  desconto      Float     @default(0) // desconto obtido (relevante p/ LIQUIDACAO)
+  observacao    String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@index([userId, updatedAt])
+  @@index([debtId, competencia])
+  @@index([userId, competencia])
+}
+
+
+model SyncMap {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entity    String
+  localId   String
+  serverId  String
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, entity, localId])
+  @@index([userId, entity])
+}
+
+model Agreement {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  debtId             String?
+  debt               Debt?    @relation(fields: [debtId], references: [id])
+
+  credor             String   @default("")
+  tipo               String   @default("EXTRAJUDICIAL")
+  status             String   @default("SIMULACAO")
+  dataAcordo         String   @default("")
+  valorOriginal      Float    @default(0)
+  valorAcordado      Float    @default(0)
+  desconto           Float    @default(0)
+  novaParcela        Float    @default(0)
+  qtdParcelas        Int      @default(0)
+  parcelasPagas      Int      @default(0)
+  primeiroVencimento String   @default("")
+  canal              String   @default("")
+  homologado         Boolean  @default(false)
+  substituiDivida    Boolean  @default(false)
+  observacao         String   @default("")
+  data               String   @default("")
+  prazo              String   @default("")
+
+  deletedAt          DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model LegalAgreement {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  debtIds              String   @default("[]")
+
+  numeroProcesso       String   @default("")
+  orgao                String   @default("")
+  processo             String   @default("")
+  vara                 String   @default("")
+
+  dataAudiencia        String   @default("")
+  dataHomologacao      String   @default("")
+
+  status               String   @default("EM_ANDAMENTO")
+
+  valorConsolidado     Float    @default(0)
+  parcelaJudicial      Float    @default(0)
+  valorTotal           Float    @default(0)
+  parcela              Float    @default(0)
+
+  qtdParcelas          Int      @default(0)
+  parcelasPagas        Int      @default(0)
+  prazo                String   @default("")
+  primeiroVencimento   String   @default("")
+
+  credoresIncluidos    String   @default("")
+  substituiDividas     Boolean  @default(false)
+  observacao           String   @default("")
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  deletedAt            DateTime?
+
+  @@index([userId, updatedAt])
+}
+
+model PaymentAlert {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  debtId      String?
+  competencia String    @default("")
+  status      String    @default("PENDENTE")
+  mensagem    String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([userId, competencia])
+  @@index([userId, updatedAt])
+}
+
+model TaxReport {
+  id                  String   @id @default(cuid())
+
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ano                 Int
+
+  rendimentos         Float    @default(0)
+  dividasDeclaraveis  Float    @default(0)
+  pagamentosEfetuados Float    @default(0)
+  jurosPagos          Float    @default(0)
+  descontosObtidos    Float    @default(0)
+
+  bancos              String   @default("")
+  observacao          String   @default("")
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  deletedAt           DateTime?
+
+  @@unique([userId, ano])
+}
+
+model UserSession {
+  id        String    @id @default(cuid())
+
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String    @unique
+  userAgent String    @default("")
+  ip        String    @default("")
+  active    Boolean   @default(true)
+  revokedAt DateTime?
+  expiresAt DateTime
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId, active])
+}

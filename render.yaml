@@ -1,0 +1,21 @@
+# Deploy 1-clique no Render. Crie o banco no https://console.neon.tech antes.
+services:
+  - type: web
+    name: restauracao-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: "npm install && npm run build && npx prisma migrate deploy"
+    startCommand: "npm run start"
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_IDS
+        sync: false
+      - key: CORS_ORIGINS
+        value: "*"
