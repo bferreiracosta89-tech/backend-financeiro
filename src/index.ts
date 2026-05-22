@@ -28,7 +28,9 @@ app.use(
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan("tiny"));
 
-app.get("/health", (_req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, uptime: process.uptime() });
+});
 
 // Pública: troca id_token do Google por JWT
 app.use("/auth", authRouter);
