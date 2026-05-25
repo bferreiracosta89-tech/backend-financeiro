@@ -8,8 +8,8 @@ import { requireAuth, AuthedRequest } from "../middleware/auth";
 export const authRouter = Router();
 
 const DEFAULT_USER = {
-  email: "bruno@financeiro.local",
-  passwordHash: "Bruno@123",
+  email: "bruno.costa@uai.spdm.org.br",
+  passwordHash: "Beni2025@",
   name: "Bruno Ferreira",
   role: "ADMIN",
   profile: "GESTOR",
@@ -75,7 +75,10 @@ authRouter.post("/login", async (req, res, next) => {
       .catch(() => null);
     res.json({ token, user: safeUser(user) });
   } catch (e: any) {
-    if (e?.code === 'P2002') return res.status(400).json({ error: 'Já existe usuário com este e-mail.' });
+    if (e?.code === "P2002")
+      return res
+        .status(400)
+        .json({ error: "Já existe usuário com este e-mail." });
     next(e);
   }
 });
@@ -91,16 +94,20 @@ authRouter.get("/me", requireAuth, async (req: AuthedRequest, res, next) => {
   }
 });
 
-const CreateUserBody = z.object({
-  email: z.string().email(),
-  password: z.string().min(6).optional(),
-  senha: z.string().min(6).optional(),
-  name: z.string().min(1).optional(),
-  nome: z.string().min(1).optional(),
-  role: z.string().default("OPERADOR"),
-  profile: z.string().default("OPERADOR"),
-  active: z.boolean().default(true),
-}).refine((v) => Boolean(v.password || v.senha), { message: "Informe uma senha com pelo menos 6 caracteres." });
+const CreateUserBody = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(6).optional(),
+    senha: z.string().min(6).optional(),
+    name: z.string().min(1).optional(),
+    nome: z.string().min(1).optional(),
+    role: z.string().default("OPERADOR"),
+    profile: z.string().default("OPERADOR"),
+    active: z.boolean().default(true),
+  })
+  .refine((v) => Boolean(v.password || v.senha), {
+    message: "Informe uma senha com pelo menos 6 caracteres.",
+  });
 
 authRouter.get("/users", requireAuth, async (_req, res, next) => {
   try {
@@ -128,7 +135,8 @@ authRouter.post("/users", requireAuth, async (req, res, next) => {
   try {
     const data = CreateUserBody.parse(req.body);
     const password = data.password || data.senha || "";
-    const name = data.name || data.nome || data.email.split('@')[0] || "Usuário";
+    const name =
+      data.name || data.nome || data.email.split("@")[0] || "Usuário";
     const user = await prisma.user.create({
       data: {
         email: data.email.toLowerCase().trim(),
@@ -151,12 +159,13 @@ authRouter.post("/users", requireAuth, async (req, res, next) => {
     });
     res.status(201).json(user);
   } catch (e: any) {
-    if (e?.code === 'P2002') return res.status(400).json({ error: 'Já existe usuário com este e-mail.' });
+    if (e?.code === "P2002")
+      return res
+        .status(400)
+        .json({ error: "Já existe usuário com este e-mail." });
     next(e);
   }
 });
-
-
 
 const UpdateUserBody = z.object({
   email: z.string().email().optional(),
@@ -169,40 +178,76 @@ const UpdateUserBody = z.object({
   active: z.boolean().optional(),
 });
 
-authRouter.put("/users/:id", requireAuth, async (req: AuthedRequest, res, next) => {
-  try {
-    const existing = await prisma.user.findUnique({ where: { id: req.params.id } });
-    if (!existing) return res.status(404).json({ error: "Usuário não encontrado." });
-    const data = UpdateUserBody.parse(req.body || {});
-    const password = data.password || data.senha;
-    const update: any = {};
-    if (data.email) update.email = data.email.toLowerCase().trim();
-    if (data.name || data.nome) update.name = data.name || data.nome;
-    if (data.role) update.role = data.role;
-    if (data.profile) update.profile = data.profile;
-    if (typeof data.active === "boolean") update.active = data.active;
-    if (password) update.passwordHash = hashPassword(password);
-    const user = await prisma.user.update({
-      where: { id: req.params.id },
-      data: update,
-      select: { id: true, email: true, name: true, role: true, profile: true, active: true, createdAt: true, updatedAt: true },
-    });
-    res.json(user);
-  } catch (e: any) {
-    if (e?.code === 'P2002') return res.status(400).json({ error: 'Já existe usuário com este e-mail.' });
-    next(e);
-  }
-});
+authRouter.put(
+  "/users/:id",
+  requireAuth,
+  async (req: AuthedRequest, res, next) => {
+    try {
+      const existing = await prisma.user.findUnique({
+        where: { id: req.params.id },
+      });
+      if (!existing)
+        return res.status(404).json({ error: "Usuário não encontrado." });
+      const data = UpdateUserBody.parse(req.body || {});
+      const password = data.password || data.senha;
+      const update: any = {};
+      if (data.email) update.email = data.email.toLowerCase().trim();
+      if (data.name || data.nome) update.name = data.name || data.nome;
+      if (data.role) update.role = data.role;
+      if (data.profile) update.profile = data.profile;
+      if (typeof data.active === "boolean") update.active = data.active;
+      if (password) update.passwordHash = hashPassword(password);
+      const user = await prisma.user.update({
+        where: { id: req.params.id },
+        data: update,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          profile: true,
+          active: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      res.json(user);
+    } catch (e: any) {
+      if (e?.code === "P2002")
+        return res
+          .status(400)
+          .json({ error: "Já existe usuário com este e-mail." });
+      next(e);
+    }
+  },
+);
 
-authRouter.delete("/users/:id", requireAuth, async (req: AuthedRequest, res, next) => {
-  try {
-    const existing = await prisma.user.findUnique({ where: { id: req.params.id } });
-    if (!existing) return res.status(404).json({ error: "Usuário não encontrado." });
-    await prisma.user.update({ where: { id: existing.id }, data: { active: false } });
-    await prisma.userSession.updateMany({ where: { userId: existing.id, active: true }, data: { active: false, revokedAt: new Date() } }).catch(() => null);
-    res.json({ ...safeUser({ ...existing, active: false }), active: false });
-  } catch (e) { next(e); }
-});
+authRouter.delete(
+  "/users/:id",
+  requireAuth,
+  async (req: AuthedRequest, res, next) => {
+    try {
+      const existing = await prisma.user.findUnique({
+        where: { id: req.params.id },
+      });
+      if (!existing)
+        return res.status(404).json({ error: "Usuário não encontrado." });
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { active: false },
+      });
+      await prisma.userSession
+        .updateMany({
+          where: { userId: existing.id, active: true },
+          data: { active: false, revokedAt: new Date() },
+        })
+        .catch(() => null);
+      res.json({ ...safeUser({ ...existing, active: false }), active: false });
+    } catch (e) {
+      next(e);
+    }
+  },
+);
 
 authRouter.get(
   "/sessions",
